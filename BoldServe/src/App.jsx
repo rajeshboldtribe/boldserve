@@ -33,30 +33,34 @@ function App() {
       setCartCount(parsedCart.length);
     }
 
-    // Set initial category and subcategory
-    handleCategoryChange('Office Stationeries', 1); // Assuming 1 is the ID for Office Stationeries
+    // Modified initial category setup
+    const initialCategory = 'Office Stationeries';
+    const initialSubCategory = 'Notebooks & Papers';
+    setSelectedCategory(initialCategory);
+    setSelectedSubCategory(initialSubCategory);
+    setSelectedCategoryId(1); // If you need this ID
   }, []);
 
   const handleCategoryChange = (categoryName, categoryId) => {
-    if (categoryName && categoryId !== undefined) {
-      setSelectedCategory(categoryName);
-      setSelectedCategoryId(categoryId);
-      
-      // Set default subcategories based on category
-      switch (categoryName) {
-        case 'Office Stationeries':
-          setSelectedSubCategory('Notebooks & Papers');  // Replace with your first subcategory
-          break;
-        case 'Print and Demands':
-          setSelectedSubCategory('Business Cards');
-          break;
-        case 'IT Services and Repair':
-          setSelectedSubCategory('Computer & Laptop Repair');  // Replace with your first subcategory
-          break;
-        default:
-          setSelectedSubCategory('');
-      }
+    setSelectedCategory(categoryName);
+    setSelectedCategoryId(categoryId);
+    
+    // Set initial subcategory based on category
+    let initialSubCategory = '';
+    switch (categoryName) {
+      case 'Office Stationeries':
+        initialSubCategory = 'Notebooks & Papers';
+        break;
+      case 'Print and Demands':
+        initialSubCategory = 'Business Cards';
+        break;
+      case 'IT Services and Repair':
+        initialSubCategory = 'Computer & Laptop Repair';
+        break;
+      default:
+        initialSubCategory = '';
     }
+    setSelectedSubCategory(initialSubCategory);
   };
 
   const handleAddToCart = (product) => {
@@ -67,6 +71,7 @@ function App() {
   };
 
   const handleSubCategorySelect = (subCategoryName) => {
+    console.log('Selected SubCategory:', subCategoryName); // Debug log
     setSelectedSubCategory(subCategoryName);
   };
 
@@ -112,7 +117,7 @@ function App() {
               </Box>
             } />
 
-            {/* Other Routes */}
+            {/* Products Route */}
             <Route path="/products" element={
               <Box sx={{ flex: 1, mb: 20 }}>
                 <Categories
@@ -128,6 +133,7 @@ function App() {
                     onAddToCart={handleAddToCart}
                     selectedCategory={selectedCategory}
                     selectedSubCategory={selectedSubCategory}
+                    key={`${selectedCategory}-${selectedSubCategory}`}
                   />
                 </Box>
               </Box>

@@ -46,15 +46,30 @@ const Services = () => {
     try {
       const serviceData = new FormData();
       
-      Object.keys(formData).forEach(key => {
+      // Ensure exact category and subcategory names match with what's selected
+      const formattedData = {
+        ...formData,
+        category: formData.category.trim(),  // Keep the selected category as is
+        subCategory: formData.subCategory.trim(),  // Keep the selected subcategory as is
+        productName: formData.productName.trim(),
+        price: Number(formData.price),
+        description: formData.description.trim(),
+        offers: formData.offers.trim(),
+        review: formData.review.trim(),
+        rating: formData.rating ? Number(formData.rating) : 0
+      };
+      
+      // Debug logging
+      console.log('Sending service data:', formattedData);
+      
+      Object.keys(formattedData).forEach(key => {
         if (key === 'image' && formData[key]) {
           serviceData.append('image', formData[key]);
         } else {
-          serviceData.append(key, formData[key]);
+          serviceData.append(key, formattedData[key]);
         }
       });
 
-      // Fixed the URL by removing the duplicate 'api'
       const response = await axios.post('/services', serviceData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -62,14 +77,14 @@ const Services = () => {
       });
 
       console.log('Service created:', response.data);
-
+      
       setSnackbar({
         open: true,
-        message: 'Service created successfully!',
+        message: `Product successfully added to ${formData.subCategory}!`,
         severity: 'success'
       });
 
-      // Clear form
+      // Clear form after successful submission
       setFormData({
         category: '',
         subCategory: '',
@@ -83,11 +98,8 @@ const Services = () => {
       });
 
     } catch (error) {
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
+      console.error('Error creating service:', error);
+      console.log('Form Data:', formData);
       
       setSnackbar({
         open: true,

@@ -35,7 +35,7 @@ const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit
+        fileSize: 10 * 1024 * 1024 // Increased to 10MB limit
     }
 }).single('image');
 
@@ -44,6 +44,13 @@ const uploadMiddleware = (req, res, next) => {
     upload(req, res, function (err) {
         if (err instanceof multer.MulterError) {
             console.error('Multer error:', err);
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'File is too large. Maximum size is 10MB',
+                    error: err.message
+                });
+            }
             return res.status(400).json({
                 status: 'error',
                 message: 'File upload error',
@@ -71,13 +78,26 @@ router.use((req, res, next) => {
     next();
 });
 
+// Serve static files from uploads directory
+router.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 // Routes
 router.post('/', uploadMiddleware, async (req, res) => {
     try {
         const serviceData = {
             ...req.body,
-            image: req.file ? `/uploads/${req.file.filename}` : null
+            category: req.body.category.trim(),
+            subCategory: req.body.subCategory.trim(),
+            productName: req.body.productName.trim(),
+            price: Number(req.body.price),
+            description: req.body.description.trim(),
+            offers: req.body.offers ? req.body.offers.trim() : '',
+            review: req.body.review ? req.body.review.trim() : '',
+            rating: req.body.rating ? Number(req.body.rating) : 0,
+            image: req.file ? `/api/services/uploads/${req.file.filename}` : null
         };
+
+        console.log('Creating service with data:', serviceData);
 
         const service = new Service(serviceData);
         await service.save();
@@ -101,21 +121,25 @@ router.get('/category', async (req, res) => {
         const { category, subCategory } = req.query;
         let query = {};
 
-        if (category) {
-            query.category = category;
-        }
-        if (subCategory) {
-            query.subCategory = subCategory;
+        if (category && subCategory) {
+            query = {
+                category: new RegExp('^' + category.trim() + '$', 'i'),
+                subCategory: new RegExp('^' + subCategory.trim() + '$', 'i')
+            };
+        } else if (category) {
+            query = {
+                category: new RegExp('^' + category.trim() + '$', 'i')
+            };
         }
 
         console.log('Query parameters:', query);
 
         const products = await Service.find(query);
+        console.log('Found products:', products);
         
         if (products.length === 0) {
-            return res.status(404).json({
-                message: 'No products found for the specified category/subcategory'
-            });
+            console.log('No products found for:', { category, subCategory });
+            return res.status(200).json([]); // Return empty array instead of 404
         }
 
         res.status(200).json(products);
@@ -128,10 +152,27 @@ router.get('/category', async (req, res) => {
     }
 });
 
-// Get all services
+// Get all services with optional filtering
 router.get('/', async (req, res) => {
     try {
-        const services = await Service.find();
+        const { category, subCategory } = req.query;
+        let query = {};
+
+        if (category && subCategory) {
+            query = {
+                category: new RegExp('^' + category.trim() + '$', 'i'),
+                subCategory: new RegExp('^' + subCategory.trim() + '$', 'i')
+            };
+        } else if (category) {
+            query = {
+                category: new RegExp('^' + category.trim() + '$', 'i')
+            };
+        }
+
+        console.log('Query for all services:', query);
+        const services = await Service.find(query);
+        console.log(`Found ${services.length} services`);
+        
         res.status(200).json(services);
     } catch (error) {
         console.error('Error fetching services:', error);

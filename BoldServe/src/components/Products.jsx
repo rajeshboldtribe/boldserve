@@ -17,31 +17,40 @@ const Products = ({ selectedCategory, selectedSubCategory, onAddToCart, isLogged
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        let endpoint = '/api/services/category';
         
-        const response = await axios.get(endpoint, {
+        // Debug: Log the exact subcategory name
+        console.log('Selected SubCategory (exact):', `"${selectedSubCategory}"`);
+        
+        const response = await axios.get('/api/services/category', {
           params: {
-            category: selectedCategory,
+            category: 'Office Stationeries',
             subCategory: selectedSubCategory
           }
         });
 
-        let filteredProducts = response.data;
+        // Debug: Log the raw response data
+        console.log('Raw API Response:', response.data);
+        
+        // Log each product's subcategory for comparison
+        response.data.forEach(product => {
+          console.log('Product SubCategory:', `"${product.subCategory}"`, 
+            'Matches selected?:', product.subCategory.trim() === selectedSubCategory.trim());
+        });
 
-        // Filter products based on both category and subcategory
-        if (selectedCategory && selectedSubCategory) {
-          filteredProducts = response.data.filter(product => 
-            product.category === selectedCategory && 
-            product.subCategory === selectedSubCategory
-          );
-        }
-        // Filter only by category if no subcategory is selected
-        else if (selectedCategory) {
-          filteredProducts = response.data.filter(product => 
-            product.category === selectedCategory
-          );
-        }
+        const filteredProducts = response.data.filter(product => {
+          const subCategoryMatch = product.subCategory.trim() === selectedSubCategory.trim();
+          
+          // Debug: Log matching details
+          console.log('Comparing:', {
+            productSubCategory: `"${product.subCategory.trim()}"`,
+            selectedSubCategory: `"${selectedSubCategory.trim()}"`,
+            matches: subCategoryMatch
+          });
+          
+          return subCategoryMatch;
+        });
 
+        console.log('Filtered Products:', filteredProducts);
         setProducts(filteredProducts);
         setError(null);
       } catch (err) {
@@ -53,13 +62,10 @@ const Products = ({ selectedCategory, selectedSubCategory, onAddToCart, isLogged
       }
     };
 
-    if (selectedCategory) {
+    if (selectedSubCategory) {
       fetchProducts();
-    } else {
-      setProducts([]);
-      setLoading(false);
     }
-  }, [selectedCategory, selectedSubCategory]);
+  }, [selectedSubCategory]);
 
   const formatOffer = (offer) => {
     const cleanOffer = offer.replace(/[%OFF\s]/g, '');
@@ -88,6 +94,14 @@ const Products = ({ selectedCategory, selectedSubCategory, onAddToCart, isLogged
     }
   };
 
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return ''; // Return empty string or a default image path
+    // If the path already starts with http/https, return as is
+    if (imagePath.startsWith('http')) return imagePath;
+    // Otherwise, prepend the backend URL
+    return `${process.env.REACT_APP_BACKEND_URL || 'http://localhost:8003'}${imagePath}`;
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
@@ -108,7 +122,9 @@ const Products = ({ selectedCategory, selectedSubCategory, onAddToCart, isLogged
     return (
       <Box sx={{ py: 2, textAlign: 'center' }}>
         <Typography>
-          No products found for {selectedSubCategory || selectedCategory}.
+          No products found in "{selectedSubCategory}".
+          <br />
+          Category: Office Stationeries
         </Typography>
       </Box>
     );
@@ -209,16 +225,17 @@ const Products = ({ selectedCategory, selectedSubCategory, onAddToCart, isLogged
                     mb: 1,
                   }}
                 >
-                  <img
-                    src={`http://localhost:8003/${product.image}`}
+                  <Box
+                    component="img"
+                    src={getImageUrl(product.image)}
                     alt={product.productName}
-                    style={{
+                    onError={(e) => {
+                      e.target.src = '/default-product-image.jpg'; // Add a default image
+                    }}
+                    sx={{
                       maxWidth: '100%',
                       maxHeight: '100%',
                       objectFit: 'contain',
-                    }}
-                    onError={(e) => {
-                      console.error('Image load error:', product.image);
                     }}
                   />
                 </Box>
