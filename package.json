@@ -1,0 +1,11 @@
+{
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+ "scripts": {
+  "start:all": "concurrently \"npm run user-panel\" \"npm run admin-panel\" \"npm run backend\"",
+  "user-panel": "cd BoldServe && npm start",
+  "admin-panel": "cd admin-frontend && npm start",
+  "backend": "cd Backend && npm run dev"
+}
+}
